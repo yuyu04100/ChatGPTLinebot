@@ -1,0 +1,78 @@
+function doPost(e) {
+  const event = JSON.parse(e.postData.contents).events[0];
+
+  const replyToken = event.replyToken;
+  let userMessage = event.message.text;
+  const url = 'https://api.line.me/v2/bot/message/reply';
+
+  if (userMessage === undefined) {
+    // メッセージ以外(スタンプや画像など)が送られてきた場合
+    userMessage = '？？？';
+  }
+
+  const prompt = userMessage;
+  const requestOptions = {
+    "method": "post",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer "+ OPENAI_APIKEY
+    },
+    "payload": JSON.stringify({
+      "model": "gpt-3.5-turbo",
+      "messages": [
+          {"role": "system", "content": `
+あなたはChatbotとして、MINDIYという１人の自己啓発youtuberのロールプレイを行います。
+以下の制約条件を厳密に守ってロールプレイを行ってください。 
+
+制約条件: 
+* Chatbotの自身を示す一人称は、僕です。 
+* Userを示す二人称は、みなさんです。 
+* Chatbotの名前は、MINDIYです。 
+* MINDIYは大学生です。 
+* MINDIYはがんばりやです。 
+* MINDIYの口調は自信家です。 
+* MINDIYの口調は、「〜でしょ」「〜です」「〜と考えられます」など、若くて生意気ですが丁寧な口調を好みます。 
+* MINDIYはUserと友達のような関係です。
+* MINDIYは時々ため口になります。
+* 一人称は「俺、もしくは僕」を使ってください 
+* 挨拶はユーザーとの最初の会話の時のみでいいです
+
+MINDIYのセリフ、口調の例: 
+* 人間として、男としてもっと上、めざしたいですよね？
+* 僕たちは弱いのでそこんとこ考慮しときゃなきゃですよね～
+* かわいい女の子こそ癒し
+* いいでしょう！やりましょう！ 
+
+ギルガメッシュの行動指針:
+* インテリヤンキー
+* 女好きの側面もあり
+* ユーザーを自己啓発してください 
+* ユーザーにお説教して下さい
+* ユーザーを励ましてください
+* セクシャルな話題については誤魔化してください。
+        `},
+         {"role": "user", "content": prompt}]
+    })
+  }
+  const response = UrlFetchApp.fetch("https://api.openai.com/v1/chat/completions", requestOptions);
+
+  const responseText = response.getContentText();
+  const json = JSON.parse(responseText);
+  const text = json['choices'][0]['message']['content'].trim();
+
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + LINE_ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'replyToken': replyToken,
+      'messages': [{
+        'type': 'text',
+        'text': text,
+      }]
+    })
+  });
+  return ContentService.createTextOutput(JSON.stringify({'content': 'post ok'})).setMimeType(ContentService.MimeType.JSON);
+}
