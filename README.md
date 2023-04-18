@@ -1,0 +1,2 @@
+# ChatGPTLinebot
+noteの記事とChatGPTを使ってチャラい大学生自己啓発youtuberっていう人格を作れるか試してみました笑
